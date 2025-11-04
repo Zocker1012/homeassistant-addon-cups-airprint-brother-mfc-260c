@@ -5,10 +5,16 @@
  
  # Set shell
  SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
- RUN dpkg --add-architecture i386 && apt update
- RUN apt update \
-     && apt install -y --no-install-recommends \
+ 
+-RUN dpkg --add-architecture i386 && apt update
+-RUN apt update \
+-    && apt install -y --no-install-recommends \
++ENV DEBIAN_FRONTEND=noninteractive
++
++# i386 aktivieren und alles in EINEM Layer installieren
++RUN dpkg --add-architecture i386 \
++    && apt update \
++    && apt install -y --no-install-recommends \
          sudo \
          locales \
          cups \
@@ -16,6 +22,7 @@
          avahi-daemon \
          libnss-mdns \
          dbus \
+-+        udev \
 +        udev \
          colord \
          printer-driver-all-enforce \
@@ -38,31 +45,27 @@
          bash-completion \
          procps \
          whois \
+-+        ca-certificates wget curl \
+-+        libc6:i386 libstdc++6:i386 zlib1g:i386 libusb-0.1-4:i386 \
 +        ca-certificates wget curl \
 +        libc6:i386 libstdc++6:i386 zlib1g:i386 libusb-0.1-4:i386 \
      && apt clean -y \
      && rm -rf /var/lib/apt/lists/*
  
-+# --- Brother MFC-260C Treiber integrieren (i386 .deb) ---
+ # --- Brother MFC-260C Treiber integrieren (i386 .deb) ---
+-RUN mkdir -p /tmp/brother \
 +RUN mkdir -p /tmp/brother \
-+  && wget -O /tmp/brother/mfc260clpr-1.0.1-1.i386.deb \
-+       https://download.brother.com/welcome/dlf006076/mfc260clpr-1.0.1-1.i386.deb \
-+  && wget -O /tmp/brother/mfc260ccupswrapper-1.0.1-1.i386.deb \
-+       https://download.brother.com/welcome/dlf006078/mfc260ccupswrapper-1.0.1-1.i386.deb \
-+  && dpkg -i /tmp/brother/mfc260clpr-1.0.1-1.i386.deb || true \
-+  && dpkg -i /tmp/brother/mfc260ccupswrapper-1.0.1-1.i386.deb || true \
+   && wget -O /tmp/brother/mfc260clpr-1.0.1-1.i386.deb \
+        https://download.brother.com/welcome/dlf006076/mfc260clpr-1.0.1-1.i386.deb \
+   && wget -O /tmp/brother/mfc260ccupswrapper-1.0.1-1.i386.deb \
+        https://download.brother.com/welcome/dlf006078/mfc260ccupswrapper-1.0.1-1.i386.deb \
+   && dpkg -i /tmp/brother/mfc260clpr-1.0.1-1.i386.deb || true \
+   && dpkg -i /tmp/brother/mfc260ccupswrapper-1.0.1-1.i386.deb || true \
+-  && apt update && apt -f install -y \
 +  && apt update && apt -f install -y \
-+  && find /usr -name 'brlpdwrapper*' -exec chmod 0755 {} \; \
-+  && rm -rf /tmp/brother
-+
- # Add Canon cnijfilter2 driver
- RUN cd /tmp \
-   && if [ "$(arch)" = 'x86_64' ]; then ARCH="amd64"; else ARCH="arm64"; fi \
-   && curl https://gdlp01.c-wss.com/gds/0/0100012300/02/cnijfilter2-6.80-1-deb.tar.gz -o cnijfilter2.tar.gz \
-   && tar -xvf ./cnijfilter2.tar.gz cnijfilter2-6.80-1-deb/packages/cnijfilter2_6.80-1_${ARCH}.deb \
-   && mv cnijfilter2-6.80-1-deb/packages/cnijfilter2_6.80-1_${ARCH}.deb cnijfilter2_6.80-1.deb \
-   && apt install ./cnijfilter2_6.80-1.deb
- 
+   && find /usr -name 'brlpdwrapper*' -exec chmod 0755 {} \; \
+   && rm -rf /tmp/brother
+@@
  COPY rootfs /
  
  # Add user and disable sudo password checking
