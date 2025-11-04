@@ -1,85 +1,89 @@
- ARG BUILD_FROM
- FROM $BUILD_FROM
- 
- LABEL io.hass.version="1.5" io.hass.type="addon" io.hass.arch="aarch64|amd64"
- 
- # Set shell
- SHELL ["/bin/bash", "-o", "pipefail", "-c"]
- 
--RUN dpkg --add-architecture i386 && apt update
--RUN apt update \
--    && apt install -y --no-install-recommends \
-+ENV DEBIAN_FRONTEND=noninteractive
-+
-+# i386 aktivieren und alles in EINEM Layer installieren
-+RUN dpkg --add-architecture i386 \
-+    && apt update \
-+    && apt install -y --no-install-recommends \
-         sudo \
-         locales \
-         cups \
-         cups-filters \
-         avahi-daemon \
-         libnss-mdns \
-         dbus \
--+        udev \
-+        udev \
-         colord \
-         printer-driver-all-enforce \
-         printer-driver-all \
-         printer-driver-splix \
-         printer-driver-brlaser \
-         printer-driver-gutenprint \
-         openprinting-ppds \
-         hpijs-ppds \
-         hp-ppd  \
-         hplip \
-         printer-driver-foo2zjs \
-         printer-driver-hpcups \
-         printer-driver-escpr \
-         cups-pdf \
-         gnupg2 \
-         lsb-release \
-         nano \
-         samba \
-         bash-completion \
-         procps \
-         whois \
--+        ca-certificates wget curl \
--+        libc6:i386 libstdc++6:i386 zlib1g:i386 libusb-0.1-4:i386 \
-+        ca-certificates wget curl \
-+        libc6:i386 libstdc++6:i386 zlib1g:i386 libusb-0.1-4:i386 \
-     && apt clean -y \
-     && rm -rf /var/lib/apt/lists/*
- 
- # --- Brother MFC-260C Treiber integrieren (i386 .deb) ---
--RUN mkdir -p /tmp/brother \
-+RUN mkdir -p /tmp/brother \
-   && wget -O /tmp/brother/mfc260clpr-1.0.1-1.i386.deb \
-        https://download.brother.com/welcome/dlf006076/mfc260clpr-1.0.1-1.i386.deb \
-   && wget -O /tmp/brother/mfc260ccupswrapper-1.0.1-1.i386.deb \
-        https://download.brother.com/welcome/dlf006078/mfc260ccupswrapper-1.0.1-1.i386.deb \
-   && dpkg -i /tmp/brother/mfc260clpr-1.0.1-1.i386.deb || true \
-   && dpkg -i /tmp/brother/mfc260ccupswrapper-1.0.1-1.i386.deb || true \
--  && apt update && apt -f install -y \
-+  && apt update && apt -f install -y \
-   && find /usr -name 'brlpdwrapper*' -exec chmod 0755 {} \; \
-   && rm -rf /tmp/brother
-@@
- COPY rootfs /
- 
- # Add user and disable sudo password checking
- RUN useradd \
-   --groups=sudo,lp,lpadmin \
-   --create-home \
-   --home-dir=/home/print \
-   --shell=/bin/bash \
-   --password=$(mkpasswd print) \
-   print \
+# ---- CUPS AirPrint Add-on (Brother MFC-260C) ----
+ARG BUILD_FROM
+FROM $BUILD_FROM
+
+LABEL io.hass.version="1.7" io.hass.type="addon" io.hass.arch="aarch64|amd64"
+
+# Set shell
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Aktiviert 32-Bit Architektur + installiert CUPS, Avahi, udev und 32-Bit-Runtime-Libs
+RUN dpkg --add-architecture i386 \
+    && apt update \
+    && apt install -y --no-install-recommends \
+        sudo \
+        locales \
+        cups \
+        cups-filters \
+        avahi-daemon \
+        libnss-mdns \
+        dbus \
+        udev \
+        colord \
+        printer-driver-all-enforce \
+        printer-driver-all \
+        printer-driver-splix \
+        printer-driver-brlaser \
+        printer-driver-gutenprint \
+        openprinting-ppds \
+        hpijs-ppds \
+        hp-ppd  \
+        hplip \
+        printer-driver-foo2zjs \
+        printer-driver-hpcups \
+        printer-driver-escpr \
+        cups-pdf \
+        gnupg2 \
+        lsb-release \
+        nano \
+        samba \
+        bash-completion \
+        procps \
+        whois \
+        ca-certificates wget curl \
+        libc6:i386 libstdc++6:i386 zlib1g:i386 libusb-0.1-4:i386 \
+    && apt clean -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Brother MFC-260C Treiber (i386 .deb) installieren ---
+RUN mkdir -p /tmp/brother \
+  && wget -O /tmp/brother/mfc260clpr-1.0.1-1.i386.deb \
+       https://download.brother.com/welcome/dlf006076/mfc260clpr-1.0.1-1.i386.deb \
+  && wget -O /tmp/brother/mfc260ccupswrapper-1.0.1-1.i386.deb \
+       https://download.brother.com/welcome/dlf006078/mfc260ccupswrapper-1.0.1-1.i386.deb \
+  && dpkg -i /tmp/brother/mfc260clpr-1.0.1-1.i386.deb || true \
+  && dpkg -i /tmp/brother/mfc260ccupswrapper-1.0.1-1.i386.deb || true \
+  && apt update && apt -f install -y \
+  && find /usr -name 'brlpdwrapper*' -exec chmod 0755 {} \; \
+  && rm -rf /tmp/brother
+
+# --- Canon Treiber (aus Original-Repo) ---
+RUN cd /tmp \
+  && if [ "$(arch)" = 'x86_64' ]; then ARCH="amd64"; else ARCH="arm64"; fi \
+  && curl https://gdlp01.c-wss.com/gds/0/0100012300/02/cnijfilter2-6.80-1-deb.tar.gz -o cnijfilter2.tar.gz \
+  && tar -xvf ./cnijfilter2.tar.gz cnijfilter2-6.80-1-deb/packages/cnijfilter2_6.80-1_${ARCH}.deb \
+  && mv cnijfilter2-6.80-1-deb/packages/cnijfilter2_6.80-1_${ARCH}.deb cnijfilter2_6.80-1.deb \
+  && apt install ./cnijfilter2_6.80-1.deb
+
+# --- Root-Dateien übernehmen (z. B. run.sh, avahi configs) ---
+COPY rootfs /
+
+# Benutzer wie im Original
+RUN useradd \
+  --groups=sudo,lp,lpadmin \
+  --create-home \
+  --home-dir=/home/print \
+  --shell=/bin/bash \
+  --password=$(mkpasswd print) \
+  print \
  && sed -i '/%sudo[[:space:]]/ s/ALL[[:space:]]*$/NOPASSWD:ALL/' /etc/sudoers
- 
- EXPOSE 631
- 
- RUN chmod a+x /run.sh
- 
- CMD ["/run.sh"]
+
+EXPOSE 631
+
+# Skript ausführbar machen
+RUN chmod a+x /run.sh
+
+# Start des Add-ons
+CMD ["/run.sh"]
