@@ -1,7 +1,13 @@
-name: CUPS
+name: "CUPS AirPrint (Brother MFC-260C)"
 version: "1.7"
-slug: cupsik
-description: A CUPS print server with working AirPrint
+slug: cups-airprint-brother-mfc-260c
+description:
+
+  CUPS printing server add-on for Home Assistant OS with Avahi running in reflector mode
+  for AirPrint/Bonjour discovery across network segments. Includes full support for
+  Brother MFC-260C printer using official Brother LPR and CUPS wrapper drivers (.deb).
+  Based on Debian base image with 32-bit runtime libraries for i386 filters.
+
 arch:
   - amd64
   - aarch64
