@@ -21,7 +21,6 @@ RUN dpkg --add-architecture i386 \
         libnss-mdns \
         dbus \
         udev \
-        udevd \
         colord \
         printer-driver-all-enforce \
         printer-driver-all \
