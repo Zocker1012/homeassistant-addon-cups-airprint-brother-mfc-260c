@@ -12,7 +12,10 @@ arch:
   - amd64
   - aarch64
 usb: true
+devices:
+  - /dev/bus/usb:/dev/bus/usb:rwm
 init: false
+udev: true
 homeassistant_api: true
 host_network: true
 ports:
@@ -24,3 +27,6 @@ ports_description:
 # ingress: false
 map:
   - addon_config:rw
+
+options: {}
+schema: {}  
