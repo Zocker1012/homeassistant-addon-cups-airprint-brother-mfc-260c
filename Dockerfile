@@ -5,7 +5,8 @@
  
  # Set shell
  SHELL ["/bin/bash", "-o", "pipefail", "-c"]
- 
+
+ RUN dpkg --add-architecture i386 && apt update
  RUN apt update \
      && apt install -y --no-install-recommends \
          sudo \
