@@ -44,6 +44,7 @@ RUN dpkg --add-architecture i386 \
         whois \
         ca-certificates wget curl \
         libc6:i386 libstdc++6:i386 zlib1g:i386 libusb-0.1-4:i386 \
+        file a2ps \
     && apt clean -y \
     && rm -rf /var/lib/apt/lists/*
 
